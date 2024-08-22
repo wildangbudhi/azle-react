@@ -48,21 +48,24 @@ export default Server(
             res.json({ status: 'Ok' });
         });
 
-        // app.get('/greet', (req, res) => {
-        //     res.json({ greeting: `Hello, ${req.query.name}` });
-        // });
+        app.post('/dict/:word', async (req, res) => {
+            ic.setOutgoingHttpOptions({
+                maxResponseBytes: 20_000n,
+                cycles: 500_000_000_000n, // HTTP outcalls cost cycles. Unused cycles are returned.
+                transformMethodName: 'transform'
+            });
 
-        // app.post('/price-oracle', async (req, res) => {
-        //     ic.setOutgoingHttpOptions({
-        //         maxResponseBytes: 20_000n,
-        //         cycles: 500_000_000_000n, // HTTP outcalls cost cycles. Unused cycles are returned.
-        //         transformMethodName: 'transform'
-        //     });
+            const response = await (await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${req.params.word}`)).json();
+            const definitios = response[0].meanings;
+            const resp = definitios.map( (item: { definitions: any; }) => item.definitions );
+            const respfin = resp.map( (item: any[]) => {
+                return item.map((item: { definition: any; }) => item.definition);
+            });
 
-        //     const date = '2024-04-01';
-        //     const response = await (await fetch(`https://api.coinbase.com/v2/prices/${req.body.pair}/spot?date=${date}`)).json();
-        //     res.json(response);
-        // });
+            res.json({
+                "definitions" : respfin.flat()
+            });
+        });
 
         app.use(express.static('/dist'));
         return app.listen();
@@ -73,11 +76,11 @@ export default Server(
         // Required to reach consensus among different results the nodes might get.
         // Only if they all get the same response, the result is returned, so make sure
         // your HTTP requests are idempotent and don't depend e.g. on the time.
-        // transform: query([HttpTransformArgs], HttpResponse, (args) => {
-        //     return {
-        //         ...args.response,
-        //         headers: []
-        //     };
-        // })
+        transform: query([HttpTransformArgs], HttpResponse, (args) => {
+            return {
+                ...args.response,
+                headers: [],
+            };
+        })
     }
 );

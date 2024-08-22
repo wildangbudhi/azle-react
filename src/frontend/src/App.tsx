@@ -1,15 +1,31 @@
 import { useState } from 'react';
 
 function App() {
-  const [greeting, setGreeting] = useState('');
+  const[ definitions, setDefinitions ] = useState([]);
 
   function handleSubmit(event: any) {
+
     event.preventDefault();
-    const national_id = event.target.elements.nid.value;
-    fetch(`${import.meta.env.VITE_CANISTER_URL}/test/results/${national_id}`)
-      .then(response => response.json()).then((json) => {
-        setGreeting(json.pcr_test_result)
+    const word = event.target.elements.word.value;
+
+    fetch(`${import.meta.env.VITE_CANISTER_URL}/dict/${word}`, {method: "POST"})
+      .then(
+        response => {
+          return response.json()
+        }
+      )
+      .then((json) => {
+        setDefinitions(json.definitions)
       });
+  }
+
+  const renderItem = (item: string) => {
+    return (
+      <>
+        <div>{item}</div>
+        <br/>
+      </>
+    );
   }
 
   return (
@@ -17,11 +33,11 @@ function App() {
       <br />
       <br />
       <form action="#" onSubmit={handleSubmit}>
-        <label htmlFor="nid">Enter your National ID: &nbsp;</label>
-        <input id="nid" alt="nid" type="text" />
+        <label htmlFor="word">Search your Word: &nbsp;</label>
+        <input id="word" alt="word" type="text" />
         <button type="submit">Click Me!</button>
       </form>
-      <section id="greeting">{greeting}</section>
+      <section id="greeting">{definitions.map(renderItem)}</section>
     </main >
   );
 }
